@@ -114,10 +114,31 @@ void write_sink(
       }
     }
     if(src_filename[0] == 0) return;
+
+    // Code zum Ermitteln des Pfads zu exiftool
+    char exiftool_path[1024];
+    FILE *fp;
+
+    /* Öffnen Sie die Pipe zum Ausführen des `which`-Befehls */
+    fp = popen("which exiftool", "r");
+    if (fp == NULL) {
+        printf("Fehler beim Ausführen des Befehls\n");
+        return;
+    }
+
+    /* Lesen Sie den Ausgabepfad in exiftool_path */
+    fgets(exiftool_path, sizeof(exiftool_path)-1, fp);
+
+    /* Schließen Sie die Pipe */
+    pclose(fp);
+
+    /* Entfernen Sie das abschließende newline-Zeichen */
+    exiftool_path[strcspn(exiftool_path, "\n")] = 0;
+
     char cmd[1024];
     if(snprintf(cmd, sizeof(cmd),
-          "/usr/bin/exiftool -TagsFromFile %s \"-all:all>all:all\" -Software=\"vkdt\" -ModifyDate=\"now\" -*orientation*= -overwrite_original %s",
-          src_filename, filename) >= sizeof(cmd))
+          "%s -TagsFromFile %s \"-all:all>all:all\" -Software=\"vkdt\" -ModifyDate=\"now\" -*orientation*= -overwrite_original %s",
+          exiftool_path, src_filename, filename) >= sizeof(cmd))
       return;
 
     // or async if(fork()) exec(cmd); ? for cli probably staying in this thread is safer:
